@@ -1,0 +1,88 @@
+version: '3'
+
+services:
+  nginx:
+    ports:
+      - "${HTTP_PORT}:80"
+    build:
+      context: ./containers/nginx
+      dockerfile: ./Dockerfile
+      args:
+        USER_ID: "$USER_ID"
+        GROUP_ID: "$GROUP_ID"
+        PROJECT_PREFIX: "$PROJECT_PREFIX"
+    container_name: ${PROJECT_PREFIX}_webserver
+    depends_on:
+      - mysql
+      - push
+    volumes:
+      - ${APP_LOCATION}:/home/bitrix/www
+      - ./logs/nginx:/var/log/nginx
+    links:
+      - php
+    restart: unless-stopped
+    environment:
+      - APP_ENV=${APP_ENV}
+      - PROJECT_PREFIX=${PROJECT_PREFIX}
+    networks:
+      default:
+        aliases:
+          - ${PROJECT_PREFIX}.localhost
+
+  php:
+    build:
+      context: ./containers/php
+      dockerfile: ./Dockerfile
+      args:
+        USER_ID: "$USER_ID"
+        GROUP_ID: "$GROUP_ID"
+    container_name: ${PROJECT_PREFIX}_php
+    volumes:
+      - ./www:/home/bitrix/www
+      - ./${LOGS_LOCATION}/php:/var/log/php
+    links:
+      - mysql
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      PROJECT_PREFIX: ${PROJECT_PREFIX}
+      PHP_IDE_CONFIG: serverName=serverName
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mysql:
+    ports:
+      - "33060:3306"
+    build: 
+        context: ./containers/mysql
+        dockerfile: ./Dockerfile
+        args:
+            USER_ID: "$USER_ID"
+            GROUP_ID: "$GROUP_ID"
+    container_name: ${PROJECT_PREFIX}_mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - ./${LOGS_LOCATION}/mysql:/var/log/mysql
+      - ./${DATA_LOCATION}/mysql:/var/lib/mysql
+
+    restart: unless-stopped
+
+  memcached:
+    image: memcached:latest
+    container_name: ${PROJECT_PREFIX}_memcached
+    restart: unless-stopped
+
+  push:
+    build: 
+        context: ./containers/push
+        dockerfile: ./Dockerfile
+    restart: unless-stopped
+    container_name: ${PROJECT_PREFIX}_push
