@@ -17,7 +17,7 @@ services:
       - push
     volumes:
       - ${APP_LOCATION}:/home/bitrix/www
-      - ./logs/nginx:/var/log/nginx
+      - ${LOGS_LOCATION}/nginx:/var/log/nginx
     links:
       - php
     restart: unless-stopped
@@ -38,8 +38,8 @@ services:
         GROUP_ID: "$GROUP_ID"
     container_name: ${PROJECT_PREFIX}_php
     volumes:
-      - ./www:/home/bitrix/www
-      - ./${LOGS_LOCATION}/php:/var/log/php
+      - ${APP_LOCATION}:/home/bitrix/www
+      - ${LOGS_LOCATION}/php:/var/log/php
     links:
       - mysql
     restart: unless-stopped
@@ -59,12 +59,12 @@ services:
   mysql:
     ports:
       - "33060:3306"
-    build: 
-        context: ./containers/mysql
-        dockerfile: ./Dockerfile
-        args:
-            USER_ID: "$USER_ID"
-            GROUP_ID: "$GROUP_ID"
+    build:
+      context: ./containers/mysql
+      dockerfile: ./Dockerfile
+      args:
+        USER_ID: "$USER_ID"
+        GROUP_ID: "$GROUP_ID"
     container_name: ${PROJECT_PREFIX}_mysql
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -72,8 +72,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: password
     volumes:
-      - ./${LOGS_LOCATION}/mysql:/var/log/mysql
-      - ./${DATA_LOCATION}/mysql:/var/lib/mysql
+      - ${LOGS_LOCATION}/mysql:/var/log/mysql
+      - ${DATA_LOCATION}/mysql:/var/lib/mysql
 
     restart: unless-stopped
 
@@ -83,8 +83,8 @@ services:
     restart: unless-stopped
 
   push:
-    build: 
-        context: ./containers/push
-        dockerfile: ./Dockerfile
+    build:
+      context: ./containers/push
+      dockerfile: ./Dockerfile
     restart: unless-stopped
     container_name: ${PROJECT_PREFIX}_push
